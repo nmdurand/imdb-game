@@ -29,7 +29,7 @@ type State = {
 
 type Actions = {
   start: () => Promise<void>;
-  answer: (choiceMovieId: number) => Promise<void>;
+  answer: (choiceMovieId: number | null) => Promise<void>;
   advance: () => void;
   reset: () => Promise<void>;
 };
@@ -80,7 +80,7 @@ export const useGameStore = create<State & Actions>((set, get) => ({
     await get().start();
   },
 
-  answer: async (choiceMovieId) => {
+  answer: async (choiceMovieId: number | null) => {
     const s = get();
     if (turnInFlight || !s.gameId || !s.round || s.status !== "playing") return;
     turnInFlight = true;

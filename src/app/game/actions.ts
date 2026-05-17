@@ -83,7 +83,7 @@ export async function startGame(): Promise<StartGameResult> {
 export async function answerRound(input: {
   gameId: string;
   movieId: number;
-  choiceMovieId: number;
+  choiceMovieId: number | null;
 }): Promise<AnswerResult> {
   const session = await loadSession(input.gameId);
   if (session.status === "finished") throw new Error("Game already finished");
@@ -91,12 +91,14 @@ export async function answerRound(input: {
     throw new Error("Stale round");
   }
 
-  const validChoices = new Set([
-    session.currentMovieId,
-    ...session.currentDistractorIds,
-  ]);
-  if (!validChoices.has(input.choiceMovieId)) {
-    throw new Error("Invalid choice");
+  if (input.choiceMovieId !== null) {
+    const validChoices = new Set([
+      session.currentMovieId,
+      ...session.currentDistractorIds,
+    ]);
+    if (!validChoices.has(input.choiceMovieId)) {
+      throw new Error("Invalid choice");
+    }
   }
 
   const currentMovie = await loadMovie(input.movieId);
