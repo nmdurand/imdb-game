@@ -33,15 +33,24 @@ export function Header() {
         <Toolbar className="flex items-center justify-between gap-4">
           <Link
             href="/"
-            className="no-underline text-inherit"
-            aria-label="imdbGame"
+            className="no-underline text-inherit flex items-center gap-2 leading-none"
+            aria-label="IMDb game"
           >
+            <Typography
+              variant="h6"
+              component="div"
+              className="font-black text-center leading-[0.9] -rotate-6"
+              style={{ color: "#f5c518" }}
+            >
+              <div>IM</div>
+              <div>Db</div>
+            </Typography>
             <Typography
               variant="h5"
               component="span"
               className="font-bold leading-none"
             >
-              imdb<span className="italic opacity-70">Game</span>
+              game
             </Typography>
           </Link>
 

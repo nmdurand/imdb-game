@@ -1,12 +1,14 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
   <rect width="32" height="32" rx="4" fill="black" />
-  <text
-    x="4"
-    y="26"
+  <g
     font-family="Roboto, ui-sans-serif, system-ui, sans-serif"
-    font-size="22"
+    font-size="16"
     font-weight="700"
-    fill="white"
-    transform="rotate(-6 4 26)"
-  >Im</text>
+    fill="#f5c518"
+    text-anchor="middle"
+    transform="rotate(-6 16 16)"
+  >
+    <text x="16" y="15">IM</text>
+    <text x="16" y="29">Db</text>
+  </g>
 </svg>

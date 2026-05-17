@@ -6,8 +6,10 @@ export default function AboutPage() {
       <Typography variant="h4" className="text-center">
         About
       </Typography>
-      <Typography variant="body1">
-        The IMDb movie quiz - read the plot, find the movie! Data comes from{" "}
+      <Typography variant="body1" className="text-center">
+        The IMDb movie quiz - read the plot, find the movie!
+        <br />
+        Data comes from
         <a href="https://www.themoviedb.org" className="underline">
           TMDB
         </a>
