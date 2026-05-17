@@ -12,9 +12,7 @@ export function Home() {
         </Typography>
       </div>
       <Typography variant="body1" className="opacity-80 text-pretty">
-        Guess the movie from its plot. The title is hidden — pick from four
-        options, and reveal clues if you&apos;re stuck, at the cost of a few
-        points.
+        Read the plot, find the movie!
       </Typography>
       <Button
         variant="contained"
