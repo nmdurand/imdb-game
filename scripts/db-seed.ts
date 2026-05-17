@@ -138,18 +138,26 @@ async function main() {
     await sleep(PER_REQUEST_DELAY_MS);
   }
 
-  if (rows.length === 0) {
+  // TMDB's top_rated endpoint can return the same movie on multiple pages
+  // (live-rated, moving target). Drop duplicates so ON CONFLICT DO UPDATE
+  // doesn't try to touch the same row twice in one statement.
+  const uniqueRows = Array.from(
+    new Map(rows.map((r) => [r.tmdbId, r])).values(),
+  );
+  const duplicates = rows.length - uniqueRows.length;
+
+  if (uniqueRows.length === 0) {
     console.error("No rows to insert; aborting.");
     process.exit(1);
   }
 
   console.log(
-    `Inserting ${rows.length} movies (skipped ${skipped})…`,
+    `Inserting ${uniqueRows.length} movies (skipped ${skipped}, deduped ${duplicates})…`,
   );
   // Upsert on tmdbId so re-running the script refreshes data without duplicating.
   await db
     .insert(moviesTable)
-    .values(rows)
+    .values(uniqueRows)
     .onConflictDoUpdate({
       target: moviesTable.tmdbId,
       set: {
