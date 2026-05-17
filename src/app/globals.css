@@ -1,0 +1,16 @@
+@import "tailwindcss" important;
+
+:root {
+  --background: black;
+  --foreground: white;
+}
+
+html,
+body {
+  background-color: var(--background);
+  color: var(--foreground);
+  height: 100%;
+  width: 100%;
+  padding: 0;
+  margin: 0;
+}

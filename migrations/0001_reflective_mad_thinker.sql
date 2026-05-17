@@ -1,0 +1,1 @@
+ALTER TABLE "game_sessions" DROP COLUMN "current_clues_revealed";
