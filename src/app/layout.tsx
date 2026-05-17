@@ -8,7 +8,7 @@ import { Header } from "@/components/Header";
 
 export const metadata: Metadata = {
   title: "imdbGame",
-  description: "Devine le film à partir de son synopsis",
+  description: "Guess the movie from its plot",
 };
 
 export default function RootLayout({
@@ -17,7 +17,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="fr">
+    <html lang="en">
       <body className="overflow-hidden">
         <div className="h-full w-full flex flex-col">
           <Header />

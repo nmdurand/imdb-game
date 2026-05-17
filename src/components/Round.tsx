@@ -13,7 +13,7 @@ export function Round() {
   if (error) {
     return (
       <div className="grow flex items-center justify-center">
-        <Typography color="error">Erreur de chargement</Typography>
+        <Typography color="error">Failed to load</Typography>
       </div>
     );
   }
@@ -115,7 +115,7 @@ function Reveal() {
           // eslint-disable-next-line @next/next/no-img-element
           <img
             src={posterUrl}
-            alt={`Affiche de ${revealedMovie.title}`}
+            alt={`${revealedMovie.title} poster`}
             className="w-24 rounded shrink-0"
           />
         )}
@@ -125,12 +125,12 @@ function Reveal() {
             {revealedMovie.year} &middot; {revealedMovie.director}
           </Typography>
           <Typography variant="body2" className="opacity-80">
-            Avec {revealedMovie.leadActor}
+            Starring {revealedMovie.leadActor}
           </Typography>
         </div>
       </div>
       <Button variant="contained" color="primary" onClick={advance}>
-        Suivant
+        Next
       </Button>
     </div>
   );

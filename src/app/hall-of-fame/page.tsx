@@ -8,9 +8,9 @@ import {
 export const dynamic = "force-dynamic";
 
 const WINDOW_LABELS: Record<LeaderboardWindow, string> = {
-  weekly: "Semaine",
-  monthly: "Mois",
-  allTime: "Tous les temps",
+  weekly: "This week",
+  monthly: "This month",
+  allTime: "All time",
 };
 
 export default async function HallOfFamePage() {
@@ -47,7 +47,7 @@ function Leaderboard({
         {title}
       </Typography>
       {entries.length === 0 ? (
-        <p className="text-center opacity-60">Aucun score pour l&apos;instant.</p>
+        <p className="text-center opacity-60">No scores yet.</p>
       ) : (
         <ol className="flex flex-col gap-1">
           {entries.map((entry, index) => (

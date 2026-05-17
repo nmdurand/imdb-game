@@ -17,10 +17,10 @@ import {
 } from "@mui/material";
 
 const NAV_ITEMS = [
-  { href: "/", label: "Accueil" },
-  { href: "/game", label: "Jouer" },
+  { href: "/", label: "Home" },
+  { href: "/game", label: "Play" },
   { href: "/hall-of-fame", label: "Hall of Fame" },
-  { href: "/about", label: "À propos" },
+  { href: "/about", label: "About" },
 ];
 
 export function Header() {
@@ -66,7 +66,7 @@ export function Header() {
           <IconButton
             className="sm:hidden"
             color="inherit"
-            aria-label="Ouvrir le menu"
+            aria-label="Open menu"
             onClick={() => setOpen(true)}
           >
             <MenuIcon />

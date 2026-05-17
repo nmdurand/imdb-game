@@ -72,7 +72,7 @@ export function Summary() {
 
   return (
     <div className="flex flex-col items-center gap-6">
-      <Typography variant="h4">Score : {score}</Typography>
+      <Typography variant="h4">Score: {score}</Typography>
 
       {phase.kind === "checking" && <CircularProgress size={24} />}
 
@@ -85,10 +85,10 @@ export function Summary() {
           }}
         >
           <Typography variant="body1">
-            Bravo, ton score entre au Hall of Fame !
+            Nice — your score made the Hall of Fame!
           </Typography>
           <TextField
-            label="Ton nom"
+            label="Your name"
             value={name}
             onChange={(e) => setName(e.target.value)}
             slotProps={{
@@ -109,21 +109,21 @@ export function Summary() {
             color="primary"
             disabled={!nameValid || phase.kind === "submitting"}
           >
-            Enregistrer mon score
+            Save my score
           </Button>
         </form>
       ) : null}
 
       {phase.kind === "submitted" && (
         <div className="flex flex-col items-center gap-2">
-          <Typography variant="body1">Score enregistré.</Typography>
+          <Typography variant="body1">Score saved.</Typography>
           <Button
             component={Link}
             href="/hall-of-fame"
             variant="outlined"
             color="primary"
           >
-            Voir le Hall of Fame
+            View Hall of Fame
           </Button>
         </div>
       )}
@@ -134,7 +134,7 @@ export function Summary() {
         onClick={reset}
         disabled={busy}
       >
-        Rejouer
+        Play again
       </Button>
     </div>
   );
@@ -143,13 +143,13 @@ export function Summary() {
 function messageFor(reason: Exclude<SubmitResult, { ok: true }>["reason"]) {
   switch (reason) {
     case "invalid-name":
-      return "Nom invalide (1 à 40 caractères).";
+      return "Invalid name (1 to 40 characters).";
     case "not-qualified":
-      return "Ce score n'est plus assez élevé pour le Hall of Fame.";
+      return "This score no longer qualifies for the Hall of Fame.";
     case "already-submitted":
-      return "Score déjà enregistré.";
+      return "Score already saved.";
     case "session-not-finished":
     case "session-not-found":
-      return "Session introuvable.";
+      return "Session not found.";
   }
 }

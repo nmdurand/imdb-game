@@ -12,8 +12,8 @@ export function Home() {
         </Typography>
       </div>
       <Typography variant="body1" className="opacity-80 text-pretty">
-        Devine le film à partir de son synopsis. Le titre est masqué — choisis
-        parmi quatre, et révèle des indices si tu sèches, au prix de quelques
+        Guess the movie from its plot. The title is hidden — pick from four
+        options, and reveal clues if you&apos;re stuck, at the cost of a few
         points.
       </Typography>
       <Button
@@ -23,7 +23,7 @@ export function Home() {
         href="/game"
         size="large"
       >
-        Jouer
+        Play
       </Button>
     </div>
   );
