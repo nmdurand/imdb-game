@@ -21,7 +21,7 @@ export function Home() {
         </Typography>
       </div>
       <Typography variant="body1" className="opacity-80 text-pretty">
-        Read the plot, find the movie!
+        Read the plot, guess the movie!
       </Typography>
       <Button
         variant="contained"

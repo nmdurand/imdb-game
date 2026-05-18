@@ -7,7 +7,7 @@ export default function AboutPage() {
         About
       </Typography>
       <Typography variant="body1" className="text-center">
-        The IMDb movie quiz - read the plot, find the movie!
+        The IMDb movie quiz - read the plot, guess the movie!
         <br />
         Data comes from
         <a href="https://www.themoviedb.org" className="underline">
