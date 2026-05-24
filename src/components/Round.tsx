@@ -4,8 +4,6 @@ import { Button, CircularProgress, Typography } from "@mui/material";
 import { twMerge } from "tailwind-merge";
 import { useGameStore } from "@/stores/gameStore";
 import type { ClientChoice } from "@/db/movie/dto";
-import { LinearTimer } from "./LinearTimer";
-import { TIMER_DURATION_MS } from "@/consts";
 
 export function Round() {
   const round = useGameStore((s) => s.round);
@@ -30,12 +28,6 @@ export function Round() {
 
   return (
     <div className="flex flex-col gap-6 w-full">
-      <LinearTimer
-        key={round.movieId}
-        durationMs={TIMER_DURATION_MS}
-        isStopped={status !== "playing"}
-        onEnd={() => void useGameStore.getState().answer(null)}
-      />
       <Plot text={round.plotRedacted} />
       <Choices choices={round.choices} correctMovieId={round.correctMovieId} />
       {status === "answering" && <Reveal />}
