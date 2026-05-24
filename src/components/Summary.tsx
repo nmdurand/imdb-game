@@ -71,8 +71,13 @@ export function Summary() {
   }
 
   return (
-    <div className="flex flex-col items-center gap-6">
-      <Typography variant="h4">Score: {score}</Typography>
+    <div className="flex flex-col items-center gap-4 sm:gap-6 w-full max-w-md">
+      <Typography
+        variant="h4"
+        className="text-2xl sm:text-3xl md:text-4xl text-center"
+      >
+        Score: {score}
+      </Typography>
 
       {phase.kind === "checking" && <CircularProgress size={24} />}
 

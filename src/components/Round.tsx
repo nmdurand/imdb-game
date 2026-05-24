@@ -27,7 +27,7 @@ export function Round() {
   }
 
   return (
-    <div className="flex flex-col gap-6 w-full">
+    <div className="flex flex-col gap-4 sm:gap-6 w-full">
       <Plot text={round.plotRedacted} />
       <Choices choices={round.choices} correctMovieId={round.correctMovieId} />
       {status === "answering" && <Reveal />}
@@ -40,7 +40,7 @@ function Plot({ text }: { text: string }) {
     <Typography
       variant="h6"
       component="p"
-      className="text-pretty leading-relaxed"
+      className="text-pretty leading-relaxed text-sm sm:text-base md:text-lg"
     >
       {text}
     </Typography>
@@ -70,7 +70,7 @@ function Choices({
   }
 
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-3">
       {choices.map((c) => (
         <Button
           key={c.movieId}
@@ -79,7 +79,7 @@ function Choices({
           disabled={locked}
           onClick={() => void answer(c.movieId)}
           className={twMerge(
-            "border-2 text-white text-base normal-case py-3",
+            "border-2 text-white text-sm sm:text-base normal-case py-2 sm:py-3",
             classesFor(c),
           )}
         >
@@ -107,8 +107,8 @@ function Reveal() {
     : null;
 
   return (
-    <div className="flex flex-col gap-4 mt-2 rounded border border-white/15 p-4">
-      <div className="flex items-start gap-4">
+    <div className="flex flex-col gap-3 sm:gap-4 mt-2 rounded border border-white/15 p-3 sm:p-4">
+      <div className="flex items-start gap-3 sm:gap-4">
         {posterUrl && (
           // Plain <img> is fine here — TMDB's CDN is fast and we don't need
           // next/image optimization for a 200px poster.
@@ -116,15 +116,23 @@ function Reveal() {
           <img
             src={posterUrl}
             alt={`${revealedMovie.title} poster`}
-            className="w-24 rounded shrink-0"
+            className="w-16 sm:w-24 rounded shrink-0"
           />
         )}
-        <div className="flex flex-col gap-1">
-          <Typography variant="h6">{revealedMovie.title}</Typography>
-          <Typography variant="body2" className="opacity-80">
+        <div className="flex flex-col gap-1 min-w-0">
+          <Typography variant="h6" className="text-base sm:text-lg md:text-xl">
+            {revealedMovie.title}
+          </Typography>
+          <Typography
+            variant="body2"
+            className="opacity-80 text-xs sm:text-sm"
+          >
             {revealedMovie.year} &middot; {revealedMovie.director}
           </Typography>
-          <Typography variant="body2" className="opacity-80">
+          <Typography
+            variant="body2"
+            className="opacity-80 text-xs sm:text-sm"
+          >
             Starring {revealedMovie.leadActor}
           </Typography>
         </div>

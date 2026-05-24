@@ -17,11 +17,14 @@ export default async function HallOfFamePage() {
   const leaderboards = await getLeaderboards();
 
   return (
-    <div className="w-full max-w-5xl flex flex-col gap-8">
-      <Typography variant="h4" className="text-center">
+    <div className="w-full max-w-5xl flex flex-col gap-6 sm:gap-8">
+      <Typography
+        variant="h4"
+        className="text-center text-2xl sm:text-3xl md:text-4xl"
+      >
         Hall of Fame
       </Typography>
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 sm:gap-8">
         {(Object.keys(WINDOW_LABELS) as LeaderboardWindow[]).map((window) => (
           <Leaderboard
             key={window}
@@ -43,7 +46,10 @@ function Leaderboard({
 }) {
   return (
     <section className="flex flex-col gap-3">
-      <Typography variant="h6" className="text-center">
+      <Typography
+        variant="h6"
+        className="text-center text-base sm:text-lg md:text-xl"
+      >
         {title}
       </Typography>
       {entries.length === 0 ? (

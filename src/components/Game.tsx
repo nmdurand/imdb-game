@@ -21,7 +21,7 @@ export function Game() {
   return (
     <div className="w-full flex-1 self-stretch flex flex-col">
       <GameStatusBar />
-      <div className="flex-1 w-full max-w-3xl mx-auto flex flex-col items-center justify-center px-4">
+      <div className="flex-1 w-full max-w-3xl mx-auto flex flex-col items-center justify-center">
         <Round />
       </div>
     </div>
