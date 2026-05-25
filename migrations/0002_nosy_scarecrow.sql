@@ -1,0 +1,1 @@
+ALTER TABLE "game_sessions" ADD COLUMN "current_hints_revealed" text[] DEFAULT ARRAY[]::text[] NOT NULL;

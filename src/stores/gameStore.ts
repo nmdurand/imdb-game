@@ -1,9 +1,11 @@
 "use client";
 
 import { create } from "zustand";
-import { answerRound, startGame } from "@/app/game/actions";
+import { answerRound, revealHint, startGame } from "@/app/game/actions";
 import type { ClientRound, RevealedMovie } from "@/db/movie/dto";
-import { INITIAL_LIVES_COUNT } from "@/consts";
+import { INITIAL_LIVES_COUNT, roundValueFor, type HintType } from "@/consts";
+
+export type RevealedHints = Partial<Record<HintType, string | number>>;
 
 type GameStatus =
   | "idle"
@@ -21,6 +23,7 @@ type State = {
   pendingNextRound: ClientRound | null;
   selectedChoiceId: number | null;
   revealedMovie: RevealedMovie | null;
+  revealedHints: RevealedHints;
   lives: number;
   score: number;
   status: GameStatus;
@@ -30,9 +33,14 @@ type State = {
 type Actions = {
   start: () => Promise<void>;
   answer: (choiceMovieId: number) => Promise<void>;
+  reveal: (hintType: HintType) => Promise<void>;
   advance: () => void;
   reset: () => Promise<void>;
 };
+
+export function roundValueFromHints(hints: RevealedHints): number {
+  return roundValueFor(Object.keys(hints).length);
+}
 
 const initialState: State = {
   gameId: null,
@@ -41,6 +49,7 @@ const initialState: State = {
   pendingNextRound: null,
   selectedChoiceId: null,
   revealedMovie: null,
+  revealedHints: {},
   lives: INITIAL_LIVES_COUNT,
   score: 0,
   status: "idle",
@@ -48,6 +57,7 @@ const initialState: State = {
 };
 
 let turnInFlight = false;
+let revealInFlight = false;
 let turnEpoch = 0;
 let startEpoch = 0;
 
@@ -109,6 +119,33 @@ export const useGameStore = create<State & Actions>((set, get) => ({
     }
   },
 
+  reveal: async (hintType) => {
+    const s = get();
+    if (revealInFlight || !s.gameId || !s.round || s.status !== "playing") {
+      return;
+    }
+    if (s.revealedHints[hintType] !== undefined) return;
+    revealInFlight = true;
+    const epoch = turnEpoch;
+
+    try {
+      const r = await revealHint({
+        gameId: s.gameId,
+        movieId: s.round.movieId,
+        hintType,
+      });
+      if (epoch !== turnEpoch) return;
+      set((cur) => ({
+        revealedHints: { ...cur.revealedHints, [r.hintType]: r.value },
+      }));
+    } catch (e) {
+      if (epoch !== turnEpoch) return;
+      set({ error: e as Error, status: "error" });
+    } finally {
+      revealInFlight = false;
+    }
+  },
+
   advance: () => {
     const s = get();
     if (s.status !== "answering") return;
@@ -120,6 +157,7 @@ export const useGameStore = create<State & Actions>((set, get) => ({
         pendingNextRound: null,
         selectedChoiceId: null,
         revealedMovie: null,
+        revealedHints: {},
         status: "finished",
       });
     } else {
@@ -129,6 +167,7 @@ export const useGameStore = create<State & Actions>((set, get) => ({
         pendingNextRound: null,
         selectedChoiceId: null,
         revealedMovie: null,
+        revealedHints: {},
         status: "playing",
       });
     }

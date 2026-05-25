@@ -15,6 +15,13 @@
       "when": 1778720205714,
       "tag": "0001_reflective_mad_thinker",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1779652643413,
+      "tag": "0002_nosy_scarecrow",
+      "breakpoints": true
     }
   ]
 }

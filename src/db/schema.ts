@@ -1,3 +1,4 @@
+import { sql } from "drizzle-orm";
 import {
   integer,
   pgTable,
@@ -40,6 +41,10 @@ export const gameSessionsTable = pgTable("game_sessions", {
     .array()
     .notNull()
     .default([]),
+  currentHintsRevealed: text("current_hints_revealed")
+    .array()
+    .notNull()
+    .default(sql`ARRAY[]::text[]`),
   status: text("status", { enum: ["playing", "finished"] }).notNull(),
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });

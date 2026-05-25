@@ -17,7 +17,10 @@ vi.mock("@/db/drizzle", () => ({
   },
 }));
 
-const { answerRound, startGame } = await import("@/app/game/actions");
+const { answerRound, revealHint, startGame } = await import(
+  "@/app/game/actions"
+);
+const { roundValueFor } = await import("@/consts");
 
 let cleanup: () => Promise<void>;
 
@@ -56,20 +59,36 @@ describe("startGame", () => {
 });
 
 describe("answerRound", () => {
-  it("correct answer earns 1 point and keeps lives", async () => {
-    const start = await startGame();
-    const r = await answerRound({
-      gameId: start.gameId,
-      movieId: start.round.movieId,
-      choiceMovieId: start.round.correctMovieId,
-    });
-    expect(r.score).toBe(1);
-    expect(r.lives).toBe(3);
-    expect(r.status).toBe("playing");
-    expect(r.revealedMovie.movieId).toBe(start.round.movieId);
-  });
+  it.each([
+    { hints: [] as const, expected: 10 },
+    { hints: ["year"] as const, expected: 7 },
+    { hints: ["year", "director"] as const, expected: 4 },
+    { hints: ["year", "director", "leadActor"] as const, expected: 1 },
+  ])(
+    "correct answer with $hints.length hint(s) earns $expected points",
+    async ({ hints, expected }) => {
+      const start = await startGame();
+      for (const hintType of hints) {
+        await revealHint({
+          gameId: start.gameId,
+          movieId: start.round.movieId,
+          hintType,
+        });
+      }
+      const r = await answerRound({
+        gameId: start.gameId,
+        movieId: start.round.movieId,
+        choiceMovieId: start.round.correctMovieId,
+      });
+      expect(r.score).toBe(expected);
+      expect(r.pointsEarned).toBe(expected);
+      expect(r.lives).toBe(3);
+      expect(r.status).toBe("playing");
+      expect(roundValueFor(hints.length)).toBe(expected);
+    },
+  );
 
-  it("wrong answer decrements lives and keeps score", async () => {
+  it("wrong answer decrements lives, keeps score, earns 0 points", async () => {
     const start = await startGame();
     const wrong = start.round.choices.find(
       (c) => c.movieId !== start.round.correctMovieId,
@@ -81,6 +100,7 @@ describe("answerRound", () => {
     });
     expect(r.score).toBe(0);
     expect(r.lives).toBe(2);
+    expect(r.pointsEarned).toBe(0);
     expect(r.status).toBe("playing");
   });
 
@@ -147,5 +167,90 @@ describe("answerRound", () => {
         choiceMovieId: start.round.correctMovieId,
       }),
     ).rejects.toThrow(/stale/i);
+  });
+});
+
+describe("revealHint", () => {
+  it("returns the real movie field value and tracks the hint", async () => {
+    const start = await startGame();
+    const sample = SAMPLE_MOVIES.find(
+      (m, i) => i + 1 === start.round.correctMovieId,
+    )!;
+    const r = await revealHint({
+      gameId: start.gameId,
+      movieId: start.round.movieId,
+      hintType: "year",
+    });
+    expect(r.hintType).toBe("year");
+    expect(r.value).toBe(sample.year);
+    expect(r.hintsRevealed).toEqual(["year"]);
+    expect(r.roundValue).toBe(7);
+  });
+
+  it("is idempotent on repeat reveal of the same hint (no double charge)", async () => {
+    const start = await startGame();
+    await revealHint({
+      gameId: start.gameId,
+      movieId: start.round.movieId,
+      hintType: "director",
+    });
+    const r = await revealHint({
+      gameId: start.gameId,
+      movieId: start.round.movieId,
+      hintType: "director",
+    });
+    expect(r.hintsRevealed).toEqual(["director"]);
+    expect(r.roundValue).toBe(7);
+  });
+
+  it("rejects an unknown hint type", async () => {
+    const start = await startGame();
+    await expect(
+      revealHint({
+        gameId: start.gameId,
+        movieId: start.round.movieId,
+        // @ts-expect-error testing runtime validation
+        hintType: "title",
+      }),
+    ).rejects.toThrow(/invalid hint/i);
+  });
+
+  it("rejects a stale round", async () => {
+    const start = await startGame();
+    await answerRound({
+      gameId: start.gameId,
+      movieId: start.round.movieId,
+      choiceMovieId: start.round.correctMovieId,
+    });
+    await expect(
+      revealHint({
+        gameId: start.gameId,
+        movieId: start.round.movieId,
+        hintType: "year",
+      }),
+    ).rejects.toThrow(/stale/i);
+  });
+
+  it("resets revealed hints after advancing to the next round", async () => {
+    const start = await startGame();
+    if (!start.nextRound) throw new Error("expected a lookahead");
+    await revealHint({
+      gameId: start.gameId,
+      movieId: start.round.movieId,
+      hintType: "year",
+    });
+    await answerRound({
+      gameId: start.gameId,
+      movieId: start.round.movieId,
+      choiceMovieId: start.round.correctMovieId,
+    });
+    // After server-side advance, start.nextRound is now the active round.
+    const r = await revealHint({
+      gameId: start.gameId,
+      movieId: start.nextRound.movieId,
+      hintType: "year",
+    });
+    expect(r.hintsRevealed).toEqual(["year"]);
+    expect(r.roundValue).toBe(7);
   });
 });

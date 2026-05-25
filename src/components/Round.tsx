@@ -2,8 +2,9 @@
 
 import { Button, CircularProgress, Typography } from "@mui/material";
 import { twMerge } from "tailwind-merge";
-import { useGameStore } from "@/stores/gameStore";
+import { roundValueFromHints, useGameStore } from "@/stores/gameStore";
 import type { ClientChoice } from "@/db/movie/dto";
+import { HINT_COST, HINT_TYPES, type HintType } from "@/consts";
 
 export function Round() {
   const round = useGameStore((s) => s.round);
@@ -29,8 +30,84 @@ export function Round() {
   return (
     <div className="flex flex-col gap-4 sm:gap-6 w-full">
       <Plot text={round.plotRedacted} />
+      <Hints />
       <Choices choices={round.choices} correctMovieId={round.correctMovieId} />
       {status === "answering" && <Reveal />}
+    </div>
+  );
+}
+
+const HINT_LABELS: Record<HintType, string> = {
+  year: "Year",
+  director: "Director",
+  leadActor: "Lead actor",
+};
+
+function Hints() {
+  const revealedHints = useGameStore((s) => s.revealedHints);
+  const status = useGameStore((s) => s.status);
+  const reveal = useGameStore((s) => s.reveal);
+
+  const locked = status !== "playing";
+  const roundValue = roundValueFromHints(revealedHints);
+
+  return (
+    <div className="flex flex-col gap-2 sm:gap-3">
+      <div className="flex items-baseline justify-between gap-2">
+        <Typography
+          variant="body2"
+          component="span"
+          className="opacity-80 text-[10px] sm:text-xs"
+        >
+          Round worth
+        </Typography>
+        <Typography
+          variant="body1"
+          component="span"
+          className="font-bold tabular-nums text-sm sm:text-base"
+        >
+          {roundValue} pts
+        </Typography>
+      </div>
+      <div className="grid grid-cols-3 gap-2 sm:gap-3">
+        {HINT_TYPES.map((hintType) => {
+          const value = revealedHints[hintType];
+          if (value !== undefined) {
+            return (
+              <div
+                key={hintType}
+                className="rounded border-2 border-white/20 bg-white/10 flex flex-col items-stretch py-1.5 sm:py-2 px-2 min-w-0"
+              >
+                <span className="text-[9px] sm:text-[10px] opacity-70 leading-tight">
+                  {HINT_LABELS[hintType]}
+                </span>
+                <span className="text-[11px] sm:text-xs font-semibold leading-tight truncate">
+                  {value}
+                </span>
+              </div>
+            );
+          }
+          return (
+            <Button
+              key={hintType}
+              variant="outlined"
+              color="inherit"
+              disabled={locked}
+              onClick={() => void reveal(hintType)}
+              className={twMerge(
+                "border-2 text-white normal-case flex flex-col items-stretch gap-0 py-1.5 sm:py-2 px-2 border-white/30",
+              )}
+            >
+              <span className="text-[9px] sm:text-[10px] opacity-70 leading-tight">
+                {HINT_LABELS[hintType]}
+              </span>
+              <span className="text-[11px] sm:text-xs font-semibold leading-tight truncate">
+                −{HINT_COST} pts
+              </span>
+            </Button>
+          );
+        })}
+      </div>
     </div>
   );
 }
