@@ -2,8 +2,9 @@
 
 import Link from "next/link";
 import { Button, Typography } from "@mui/material";
+import type { Dict } from "@/i18n";
 
-export function Home() {
+export function Home({ dict }: { dict: Dict["home"] }) {
   return (
     <div className="flex flex-col items-center gap-8 sm:gap-12 text-center max-w-xl">
       <div className="flex items-center gap-3 leading-none">
@@ -28,7 +29,7 @@ export function Home() {
         variant="body1"
         className="opacity-80 text-pretty text-sm sm:text-base"
       >
-        Read the plot, guess the movie!
+        {dict.tagline}
       </Typography>
       <Button
         variant="contained"
@@ -37,7 +38,7 @@ export function Home() {
         href="/game"
         size="large"
       >
-        Play
+        {dict.play}
       </Button>
     </div>
   );

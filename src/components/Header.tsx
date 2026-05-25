@@ -6,6 +6,7 @@ import { useState } from "react";
 import {
   AppBar,
   Button,
+  ButtonGroup,
   Drawer,
   IconButton,
   List,
@@ -15,17 +16,51 @@ import {
   Toolbar,
   Typography,
 } from "@mui/material";
+import type { Dict } from "@/i18n";
+import type { Locale } from "@/lib/locale";
+import { setLocaleAction } from "@/lib/locale-actions";
+import { useGameStore } from "@/stores/gameStore";
 
-const NAV_ITEMS = [
-  { href: "/", label: "Home" },
-  { href: "/game", label: "Play" },
-  { href: "/hall-of-fame", label: "Hall of Fame" },
-  { href: "/about", label: "About" },
-];
+type HeaderDict = Dict["header"];
 
-export function Header() {
+export function Header({
+  locale,
+  dict,
+}: {
+  locale: Locale;
+  dict: HeaderDict;
+}) {
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
+  const [pending, setPending] = useState(false);
+  const gameStatus = useGameStore((s) => s.status);
+
+  const navItems = [
+    { href: "/", label: dict.home },
+    { href: "/game", label: dict.play },
+    { href: "/hall-of-fame", label: dict.hallOfFame },
+    { href: "/about", label: dict.about },
+  ];
+
+  async function switchLocale(target: Locale) {
+    if (target === locale || pending) return;
+    const onGame = pathname === "/game";
+    const midGame =
+      onGame && (gameStatus === "playing" || gameStatus === "answering");
+    if (midGame && !window.confirm(dict.switchConfirmMidGame)) return;
+
+    setPending(true);
+    try {
+      await setLocaleAction(target);
+      // Restart the game only if the player is actually on /game; navigating
+      // back to /game from elsewhere already triggers a fresh start() on mount.
+      if (onGame && gameStatus !== "idle") {
+        await useGameStore.getState().reset();
+      }
+    } finally {
+      setPending(false);
+    }
+  }
 
   return (
     <>
@@ -34,7 +69,7 @@ export function Header() {
           <Link
             href="/"
             className="no-underline text-inherit flex items-center gap-2 leading-none"
-            aria-label="IMDb game"
+            aria-label={dict.logoAriaLabel}
           >
             <Typography
               variant="h6"
@@ -54,38 +89,47 @@ export function Header() {
             </Typography>
           </Link>
 
-          <nav className="hidden sm:flex items-center gap-1">
-            {NAV_ITEMS.map((item) => {
-              const active = pathname === item.href;
-              return (
-                <Button
-                  key={item.href}
-                  component={Link}
-                  href={item.href}
-                  color={active ? "primary" : "inherit"}
-                  variant="text"
-                  className={active ? "font-bold" : undefined}
-                >
-                  {item.label}
-                </Button>
-              );
-            })}
-          </nav>
+          <div className="flex items-center gap-2">
+            <nav className="hidden sm:flex items-center gap-1">
+              {navItems.map((item) => {
+                const active = pathname === item.href;
+                return (
+                  <Button
+                    key={item.href}
+                    component={Link}
+                    href={item.href}
+                    color={active ? "primary" : "inherit"}
+                    variant="text"
+                    className={active ? "font-bold" : undefined}
+                  >
+                    {item.label}
+                  </Button>
+                );
+              })}
+            </nav>
 
-          <IconButton
-            className="sm:hidden"
-            color="inherit"
-            aria-label="Open menu"
-            onClick={() => setOpen(true)}
-          >
-            <MenuIcon />
-          </IconButton>
+            <LocaleToggle
+              locale={locale}
+              dict={dict}
+              disabled={pending}
+              onSwitch={switchLocale}
+            />
+
+            <IconButton
+              className="sm:hidden"
+              color="inherit"
+              aria-label={dict.openMenu}
+              onClick={() => setOpen(true)}
+            >
+              <MenuIcon />
+            </IconButton>
+          </div>
         </Toolbar>
       </AppBar>
 
       <Drawer anchor="right" open={open} onClose={() => setOpen(false)}>
         <List className="min-w-[60vw]">
-          {NAV_ITEMS.map((item) => (
+          {navItems.map((item) => (
             <ListItem key={item.href} disablePadding>
               <ListItemButton
                 component={Link}
@@ -100,6 +144,43 @@ export function Header() {
         </List>
       </Drawer>
     </>
+  );
+}
+
+function LocaleToggle({
+  locale,
+  dict,
+  disabled,
+  onSwitch,
+}: {
+  locale: Locale;
+  dict: HeaderDict;
+  disabled: boolean;
+  onSwitch: (target: Locale) => void;
+}) {
+  return (
+    <ButtonGroup
+      size="small"
+      variant="outlined"
+      color="inherit"
+      aria-label="Language"
+      disabled={disabled}
+    >
+      <Button
+        onClick={() => onSwitch("en")}
+        variant={locale === "en" ? "contained" : "outlined"}
+        className="min-w-0 px-2 text-xs"
+      >
+        {dict.switchToEnglish}
+      </Button>
+      <Button
+        onClick={() => onSwitch("fr")}
+        variant={locale === "fr" ? "contained" : "outlined"}
+        className="min-w-0 px-2 text-xs"
+      >
+        {dict.switchToFrench}
+      </Button>
+    </ButtonGroup>
   );
 }
 

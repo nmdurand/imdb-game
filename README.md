@@ -13,6 +13,7 @@ Three lives. Get one wrong and you lose a heart.
 - Server Actions for the authoritative game loop
 - Vitest with PGlite-in-memory for tests (no DB service required for CI)
 - TMDB API for seed data (top-rated movies + plot + director + cast)
+- Bilingual UI + content (English + French) via a cookie-backed locale toggle
 
 ## Local setup
 
@@ -29,9 +30,10 @@ Docker Desktop works too — anything that exposes a Docker socket. Then:
 cp .env.example .env.local
 # Get a free TMDB key at https://www.themoviedb.org/settings/api and paste it into .env.local
 yarn install
-docker compose up -d           # Postgres at localhost:5432
-yarn db:push                   # apply the schema
-yarn db:seed                   # fetch movies from TMDB
+docker compose up -d                              # Postgres at localhost:5432
+yarn db:push                                      # apply the schema
+SEED_LANGUAGE=fr yarn db:seed                     # fetch French movies from TMDB
+SEED_LANGUAGE=en yarn db:seed                     # fetch English movies from TMDB
 yarn dev
 ```
 
@@ -53,13 +55,27 @@ To point at Neon (or any other Postgres) instead, edit `DATABASE_URL` in `.env.l
 | `db:migrate`   | Apply pending migrations                                        |
 | `db:push`      | Push the current schema to the DB without a migration file      |
 | `db:studio`    | Open Drizzle Studio for the active DB                           |
-| `db:seed`      | Fetch top movies from TMDB into the DB                          |
+| `db:seed`      | Fetch top movies from TMDB into the DB (see "Data" for env vars)|
 
 ## Data
 
-Movies come from [TMDB](https://www.themoviedb.org)'s `top_rated` endpoint, enriched per-movie with credits (director + first-billed cast). The seed script honors `SEED_MOVIE_COUNT` in `.env.local`.
+Movies come from [TMDB](https://www.themoviedb.org)'s `top_rated` endpoint, enriched per-movie with credits (director + first-billed cast). The DB stores one row per `(tmdb_id, language)`, so the same movie can have an English row and a French row.
 
-Plots have title-derived tokens redacted before they're stored (e.g. *Pulp Fiction*'s plot will have `pulp` and `fiction` replaced with `███`), so the game has to be played by inference, not pattern-matching.
+Seed script env vars:
+
+- `SEED_LANGUAGE` — `en` or `fr` (default `fr`). Maps to TMDB's `en-US` / `fr-FR`. Run the script once per language.
+- `SEED_MOVIE_COUNT` — how many top-rated movies to fetch (default 200).
+- `SEED_RESET=true` — wipes movies (and dependent sessions/hall-of-fame entries) **for the chosen language only** before seeding. Otherwise the script upserts on `(tmdb_id, language)`.
+
+Movies without an overview in the chosen language are skipped, so the row count per language may differ slightly.
+
+Plots have title-derived tokens redacted before they're stored (e.g. *Pulp Fiction*'s plot will have `pulp` and `fiction` replaced with `███`), so the game has to be played by inference, not pattern-matching. The redactor uses a combined EN+FR stopword set, so it handles both languages with no per-row branching.
+
+## Localization
+
+UI strings live in [`src/i18n/en.ts`](src/i18n/en.ts) and [`src/i18n/fr.ts`](src/i18n/fr.ts) (mirrored shape, typed off the English dict). The active locale is resolved server-side from the `imdb_locale` cookie (falling back to `Accept-Language`, then `fr`) in [`src/lib/locale.ts`](src/lib/locale.ts).
+
+The EN/FR toggle in the header writes the cookie via a server action ([`src/lib/locale-actions.ts`](src/lib/locale-actions.ts)) and revalidates the layout. The toggle is disabled mid-game — a game session is locked to one language at start so its movie picks stay consistent.
 
 ## Game mechanics
 

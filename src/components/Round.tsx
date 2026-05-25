@@ -5,15 +5,18 @@ import { twMerge } from "tailwind-merge";
 import { roundValueFromHints, useGameStore } from "@/stores/gameStore";
 import type { ClientChoice } from "@/db/movie/dto";
 import { HINT_COST, HINT_TYPES, type HintType } from "@/consts";
+import type { Dict } from "@/i18n";
 
-export function Round() {
+type RoundDict = Dict["round"];
+
+export function Round({ dict }: { dict: RoundDict }) {
   const round = useGameStore((s) => s.round);
   const error = useGameStore((s) => s.error);
 
   if (error) {
     return (
       <div className="grow flex items-center justify-center">
-        <Typography color="error">Failed to load</Typography>
+        <Typography color="error">{dict.failedToLoad}</Typography>
       </div>
     );
   }
@@ -29,20 +32,14 @@ export function Round() {
   return (
     <div className="flex flex-col gap-4 sm:gap-6 w-full">
       <Plot text={round.plotRedacted} />
-      <Hints />
+      <Hints dict={dict} />
       <Choices choices={round.choices} correctMovieId={round.correctMovieId} />
-      <NextAction />
+      <NextAction nextLabel={dict.next} />
     </div>
   );
 }
 
-const HINT_LABELS: Record<HintType, string> = {
-  year: "Year",
-  director: "Director",
-  leadActor: "Lead actor",
-};
-
-function Hints() {
+function Hints({ dict }: { dict: RoundDict }) {
   const revealedHints = useGameStore((s) => s.revealedHints);
   const revealedMovie = useGameStore((s) => s.revealedMovie);
   const status = useGameStore((s) => s.status);
@@ -65,14 +62,14 @@ function Hints() {
           component="span"
           className="opacity-80 text-[10px] sm:text-xs"
         >
-          Round worth
+          {dict.worth}
         </Typography>
         <Typography
           variant="body1"
           component="span"
           className="font-bold tabular-nums text-sm sm:text-base"
         >
-          {roundValue} pts
+          {roundValue} {dict.points}
         </Typography>
       </div>
       <div className="grid grid-cols-3 gap-2 sm:gap-3">
@@ -85,7 +82,7 @@ function Hints() {
                 className="rounded border-2 border-white/20 bg-white/10 flex flex-col items-stretch py-1.5 sm:py-2 px-2 min-w-0"
               >
                 <span className="text-[9px] sm:text-[10px] opacity-70 leading-tight">
-                  {HINT_LABELS[hintType]}
+                  {dict.hint[hintType]}
                 </span>
                 <span className="text-[11px] sm:text-xs font-semibold leading-tight truncate">
                   {value}
@@ -105,10 +102,10 @@ function Hints() {
               )}
             >
               <span className="text-[9px] sm:text-[10px] opacity-70 leading-tight">
-                {HINT_LABELS[hintType]}
+                {dict.hint[hintType]}
               </span>
               <span className="text-[11px] sm:text-xs font-semibold leading-tight truncate">
-                −{HINT_COST} pts
+                −{HINT_COST} {dict.points}
               </span>
             </Button>
           );
@@ -174,7 +171,7 @@ function Choices({
   );
 }
 
-function NextAction() {
+function NextAction({ nextLabel }: { nextLabel: string }) {
   const status = useGameStore((s) => s.status);
   const revealedMovie = useGameStore((s) => s.revealedMovie);
   const advance = useGameStore((s) => s.advance);
@@ -191,7 +188,7 @@ function NextAction() {
       className={isAnswering ? "" : "invisible"}
       aria-hidden={!isAnswering}
     >
-      {loading ? <CircularProgress size={20} color="inherit" /> : "Next"}
+      {loading ? <CircularProgress size={20} color="inherit" /> : nextLabel}
     </Button>
   );
 }

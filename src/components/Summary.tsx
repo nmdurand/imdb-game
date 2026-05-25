@@ -14,6 +14,9 @@ import {
   submitHallOfFameEntry,
   type SubmitResult,
 } from "@/app/hall-of-fame/actions";
+import type { Dict } from "@/i18n";
+
+type SummaryDict = Dict["summary"];
 
 const NAME_STORAGE_KEY = "hallOfFamePlayerName";
 const NAME_MAX = 40;
@@ -25,7 +28,7 @@ type Phase =
   | { kind: "submitting" }
   | { kind: "submitted" };
 
-export function Summary() {
+export function Summary({ dict }: { dict: SummaryDict }) {
   const score = useGameStore((s) => s.score);
   const gameId = useGameStore((s) => s.gameId);
   const reset = useGameStore((s) => s.reset);
@@ -66,7 +69,7 @@ export function Summary() {
       sessionStorage.setItem(NAME_STORAGE_KEY, trimmed);
       setPhase({ kind: "submitted" });
     } else {
-      setPhase({ kind: "qualifies", error: messageFor(result.reason) });
+      setPhase({ kind: "qualifies", error: messageFor(dict, result.reason) });
     }
   }
 
@@ -76,7 +79,7 @@ export function Summary() {
         variant="h4"
         className="text-2xl sm:text-3xl md:text-4xl text-center"
       >
-        Score: {score}
+        {dict.score} {score}
       </Typography>
 
       {phase.kind === "checking" && <CircularProgress size={24} />}
@@ -89,11 +92,9 @@ export function Summary() {
             void handleSubmit();
           }}
         >
-          <Typography variant="body1">
-            Nice — your score made the Hall of Fame!
-          </Typography>
+          <Typography variant="body1">{dict.qualified}</Typography>
           <TextField
-            label="Your name"
+            label={dict.yourName}
             value={name}
             onChange={(e) => setName(e.target.value)}
             slotProps={{
@@ -114,21 +115,21 @@ export function Summary() {
             color="primary"
             disabled={!nameValid || phase.kind === "submitting"}
           >
-            Save my score
+            {dict.save}
           </Button>
         </form>
       ) : null}
 
       {phase.kind === "submitted" && (
         <div className="flex flex-col items-center gap-2">
-          <Typography variant="body1">Score saved.</Typography>
+          <Typography variant="body1">{dict.saved}</Typography>
           <Button
             component={Link}
             href="/hall-of-fame"
             variant="outlined"
             color="primary"
           >
-            View Hall of Fame
+            {dict.viewHallOfFame}
           </Button>
         </div>
       )}
@@ -139,22 +140,25 @@ export function Summary() {
         onClick={reset}
         disabled={busy}
       >
-        Play again
+        {dict.playAgain}
       </Button>
     </div>
   );
 }
 
-function messageFor(reason: Exclude<SubmitResult, { ok: true }>["reason"]) {
+function messageFor(
+  dict: SummaryDict,
+  reason: Exclude<SubmitResult, { ok: true }>["reason"],
+) {
   switch (reason) {
     case "invalid-name":
-      return "Invalid name (1 to 40 characters).";
+      return dict.errors.invalidName;
     case "not-qualified":
-      return "This score no longer qualifies for the Hall of Fame.";
+      return dict.errors.notQualified;
     case "already-submitted":
-      return "Score already saved.";
+      return dict.errors.alreadySubmitted;
     case "session-not-finished":
     case "session-not-found":
-      return "Session not found.";
+      return dict.errors.sessionNotFound;
   }
 }
