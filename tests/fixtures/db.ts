@@ -3,6 +3,7 @@ import { migrate } from "drizzle-orm/pglite/migrator";
 import { PGlite } from "@electric-sql/pglite";
 import path from "node:path";
 import * as schema from "@/db/schema";
+import type { Locale } from "@/db/schema";
 import { redactTitle } from "@/lib/redact";
 
 export type TestDb = ReturnType<typeof drizzle<typeof schema>>;
@@ -31,9 +32,14 @@ export type SeedMovie = {
   posterPath?: string | null;
 };
 
-export async function seedMovies(db: TestDb, movies: SeedMovie[]) {
+export async function seedMovies(
+  db: TestDb,
+  movies: SeedMovie[],
+  language: Locale = "en",
+) {
   const rows = movies.map((m) => ({
     tmdbId: m.tmdbId,
+    language,
     title: m.title,
     year: m.year,
     director: m.director,

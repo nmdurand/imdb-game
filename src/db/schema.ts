@@ -5,29 +5,39 @@ import {
   serial,
   text,
   timestamp,
+  unique,
   uuid,
 } from "drizzle-orm/pg-core";
 
-export const moviesTable = pgTable("movies", {
-  id: serial("id").primaryKey(),
-  tmdbId: integer("tmdb_id").notNull().unique(),
-  title: text("title").notNull(),
-  year: integer("year").notNull(),
-  director: text("director").notNull(),
-  leadActor: text("lead_actor").notNull(),
-  // Raw plot, with title tokens still in it — never shipped to the client.
-  plot: text("plot").notNull(),
-  // Plot with title-derived tokens replaced by `█`s; this is what the player reads.
-  plotRedacted: text("plot_redacted").notNull(),
-  posterPath: text("poster_path"),
-  createdAt: timestamp("created_at").notNull().defaultNow(),
-  updatedAt: timestamp("updated_at")
-    .notNull()
-    .$onUpdate(() => new Date()),
-});
+export const LOCALES = ["en", "fr"] as const;
+export type Locale = (typeof LOCALES)[number];
+
+export const moviesTable = pgTable(
+  "movies",
+  {
+    id: serial("id").primaryKey(),
+    tmdbId: integer("tmdb_id").notNull(),
+    language: text("language", { enum: LOCALES }).notNull(),
+    title: text("title").notNull(),
+    year: integer("year").notNull(),
+    director: text("director").notNull(),
+    leadActor: text("lead_actor").notNull(),
+    // Raw plot, with title tokens still in it — never shipped to the client.
+    plot: text("plot").notNull(),
+    // Plot with title-derived tokens replaced by `█`s; this is what the player reads.
+    plotRedacted: text("plot_redacted").notNull(),
+    posterPath: text("poster_path"),
+    createdAt: timestamp("created_at").notNull().defaultNow(),
+    updatedAt: timestamp("updated_at")
+      .notNull()
+      .$onUpdate(() => new Date()),
+  },
+  (t) => [unique("movies_tmdb_language_unique").on(t.tmdbId, t.language)],
+);
 
 export const gameSessionsTable = pgTable("game_sessions", {
   id: uuid("id").primaryKey().defaultRandom(),
+  language: text("language", { enum: LOCALES }).notNull(),
   lives: integer("lives").notNull(),
   score: integer("score").notNull(),
   seenMovieIds: integer("seen_movie_ids").array().notNull().default([]),

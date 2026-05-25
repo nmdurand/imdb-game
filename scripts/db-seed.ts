@@ -1,11 +1,22 @@
 // .env.local is loaded by Node via the --env-file flag in package.json's db:seed script.
+import { eq, inArray } from "drizzle-orm";
 import { db } from "../src/db/drizzle";
-import { moviesTable, type InsertMovie } from "../src/db/schema";
+import {
+  gameSessionsTable,
+  hallOfFameEntriesTable,
+  LOCALES,
+  moviesTable,
+  type InsertMovie,
+  type Locale,
+} from "../src/db/schema";
 import { redactTitle } from "../src/lib/redact";
 import { sql } from "drizzle-orm";
 
 const TMDB_BASE = "https://api.themoviedb.org/3";
-const PAGE_SIZE = 20;
+const TMDB_LANGUAGE_BY_LOCALE: Record<Locale, string> = {
+  en: "en-US",
+  fr: "fr-FR",
+};
 const PER_REQUEST_DELAY_MS = 250; // ~4 req/s, well under TMDB's limit
 
 type TopRatedItem = {
@@ -31,9 +42,14 @@ function sleep(ms: number) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
-async function tmdb<T>(path: string, apiKey: string): Promise<T> {
+async function tmdb<T>(
+  path: string,
+  apiKey: string,
+  locale: Locale,
+): Promise<T> {
   const sep = path.includes("?") ? "&" : "?";
-  const url = `${TMDB_BASE}${path}${sep}api_key=${apiKey}`;
+  const tmdbLang = TMDB_LANGUAGE_BY_LOCALE[locale];
+  const url = `${TMDB_BASE}${path}${sep}api_key=${apiKey}&language=${tmdbLang}`;
   const res = await fetch(url);
   if (!res.ok) {
     throw new Error(`TMDB ${path} → ${res.status} ${res.statusText}`);
@@ -58,6 +74,7 @@ function parseYear(releaseDate: string): number | null {
 
 async function fetchTopRated(
   apiKey: string,
+  locale: Locale,
   count: number,
 ): Promise<TopRatedItem[]> {
   const results: TopRatedItem[] = [];
@@ -66,6 +83,7 @@ async function fetchTopRated(
     const data = await tmdb<TopRatedPage>(
       `/movie/top_rated?page=${page}`,
       apiKey,
+      locale,
     );
     results.push(...data.results);
     if (page >= data.total_pages) break;
@@ -78,11 +96,16 @@ async function fetchTopRated(
 async function buildMovieRow(
   item: TopRatedItem,
   apiKey: string,
+  locale: Locale,
 ): Promise<InsertMovie | null> {
   const year = parseYear(item.release_date);
   if (!year || !item.overview?.trim()) return null;
 
-  const credits = await tmdb<Credits>(`/movie/${item.id}/credits`, apiKey);
+  const credits = await tmdb<Credits>(
+    `/movie/${item.id}/credits`,
+    apiKey,
+    locale,
+  );
   const director = extractDirector(credits);
   const leadActor = extractLeadActor(credits);
   if (!director || !leadActor) return null;
@@ -90,6 +113,7 @@ async function buildMovieRow(
   const plot = item.overview.trim();
   return {
     tmdbId: item.id,
+    language: locale,
     title: item.title,
     year,
     director,
@@ -98,6 +122,16 @@ async function buildMovieRow(
     plotRedacted: redactTitle(plot, item.title),
     posterPath: item.poster_path,
   };
+}
+
+function parseLocale(raw: string | undefined): Locale {
+  const fallback: Locale = "fr";
+  if (!raw) return fallback;
+  if ((LOCALES as readonly string[]).includes(raw)) return raw as Locale;
+  console.error(
+    `SEED_LANGUAGE must be one of ${LOCALES.join(", ")}, got "${raw}"`,
+  );
+  process.exit(1);
 }
 
 async function main() {
@@ -113,16 +147,47 @@ async function main() {
     console.error(`SEED_MOVIE_COUNT must be a positive number, got ${count}`);
     process.exit(1);
   }
+  const locale = parseLocale(process.env.SEED_LANGUAGE);
 
-  console.log(`Fetching top ${count} movies from TMDB…`);
-  const items = await fetchTopRated(apiKey, count);
+  if (process.env.SEED_RESET === "true") {
+    console.log(
+      `SEED_RESET=true → wiping ${locale} movies + dependent rows…`,
+    );
+    // Delete sessions/entries that reference movies in this language only.
+    const moviesInLocale = await db
+      .select({ id: moviesTable.id })
+      .from(moviesTable)
+      .where(eq(moviesTable.language, locale));
+    const movieIds = moviesInLocale.map((m) => m.id);
+
+    const sessionsInLocale = await db
+      .select({ id: gameSessionsTable.id })
+      .from(gameSessionsTable)
+      .where(eq(gameSessionsTable.language, locale));
+    const sessionIds = sessionsInLocale.map((s) => s.id);
+
+    if (sessionIds.length > 0) {
+      await db
+        .delete(hallOfFameEntriesTable)
+        .where(inArray(hallOfFameEntriesTable.gameSessionId, sessionIds));
+      await db
+        .delete(gameSessionsTable)
+        .where(inArray(gameSessionsTable.id, sessionIds));
+    }
+    if (movieIds.length > 0) {
+      await db.delete(moviesTable).where(eq(moviesTable.language, locale));
+    }
+  }
+
+  console.log(`Fetching top ${count} ${locale} movies from TMDB…`);
+  const items = await fetchTopRated(apiKey, locale, count);
   console.log(`Got ${items.length} entries; enriching with credits…`);
 
   const rows: InsertMovie[] = [];
   let skipped = 0;
   for (const [i, item] of items.entries()) {
     try {
-      const row = await buildMovieRow(item, apiKey);
+      const row = await buildMovieRow(item, apiKey, locale);
       if (row) {
         rows.push(row);
       } else {
@@ -152,14 +217,14 @@ async function main() {
   }
 
   console.log(
-    `Inserting ${uniqueRows.length} movies (skipped ${skipped}, deduped ${duplicates})…`,
+    `Inserting ${uniqueRows.length} ${locale} movies (skipped ${skipped}, deduped ${duplicates})…`,
   );
-  // Upsert on tmdbId so re-running the script refreshes data without duplicating.
+  // Upsert on (tmdbId, language) so re-running refreshes without duplicating.
   await db
     .insert(moviesTable)
     .values(uniqueRows)
     .onConflictDoUpdate({
-      target: moviesTable.tmdbId,
+      target: [moviesTable.tmdbId, moviesTable.language],
       set: {
         title: sql`excluded.title`,
         year: sql`excluded.year`,

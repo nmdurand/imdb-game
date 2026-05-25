@@ -21,6 +21,7 @@ import {
   roundValueFor,
   type HintType,
 } from "@/consts";
+import { getServerLocale } from "@/lib/locale";
 
 export type StartGameResult = {
   gameId: string;
@@ -63,16 +64,18 @@ async function loadMovie(id: number): Promise<SelectMovie> {
 }
 
 export async function startGame(): Promise<StartGameResult> {
-  const current = await pickRound([]);
+  const locale = await getServerLocale();
+  const current = await pickRound(locale, []);
   if (!current) throw new Error("Not enough movies seeded");
   const seen = [current.movie.id];
 
-  const next = await pickRound(seen);
+  const next = await pickRound(locale, seen);
   if (next) seen.push(next.movie.id);
 
   const [session] = await db
     .insert(gameSessionsTable)
     .values({
+      language: locale,
       lives: INITIAL_LIVES_COUNT,
       score: 0,
       seenMovieIds: seen,
@@ -133,7 +136,7 @@ export async function answerRound(input: {
     newCurrentId = session.nextMovieId;
     newCurrentDistractorIds = session.nextDistractorIds;
 
-    const fresh = await pickRound(session.seenMovieIds);
+    const fresh = await pickRound(session.language, session.seenMovieIds);
     if (fresh) {
       newNextId = fresh.movie.id;
       newNextDistractorIds = fresh.distractors.map((d) => d.id);

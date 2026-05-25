@@ -17,6 +17,13 @@ vi.mock("@/db/drizzle", () => ({
   },
 }));
 
+vi.mock("@/lib/locale", () => ({
+  getServerLocale: async () => "en" as const,
+  DEFAULT_LOCALE: "en" as const,
+  LOCALE_COOKIE: "imdb_locale",
+  LOCALES: ["en", "fr"] as const,
+}));
+
 const { answerRound, revealHint, startGame } = await import(
   "@/app/game/actions"
 );

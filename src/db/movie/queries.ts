@@ -1,19 +1,21 @@
-import { inArray, notInArray, sql } from "drizzle-orm";
+import { and, eq, inArray, notInArray, sql } from "drizzle-orm";
 import { db } from "../drizzle";
-import { moviesTable, type SelectMovie } from "../schema";
+import { moviesTable, type Locale, type SelectMovie } from "../schema";
 import { CHOICES_PER_ROUND } from "@/consts";
 
 export type Round = { movie: SelectMovie; distractors: SelectMovie[] };
 
 async function pickRandom(
+  language: Locale,
   excludeIds: number[],
   limit: number,
 ): Promise<SelectMovie[]> {
+  const langFilter = eq(moviesTable.language, language);
   return db.query.moviesTable.findMany({
     where:
       excludeIds.length > 0
-        ? notInArray(moviesTable.id, excludeIds)
-        : undefined,
+        ? and(langFilter, notInArray(moviesTable.id, excludeIds))
+        : langFilter,
     orderBy: sql`RANDOM()`,
     limit,
   });
@@ -24,11 +26,16 @@ async function pickRandom(
 // correctMovieId is already in the round JSON for optimistic UI, so reuse
 // doesn't leak anything new.
 export async function pickRound(
+  language: Locale,
   excludeMovieIds: number[],
 ): Promise<Round | null> {
-  const [movie] = await pickRandom(excludeMovieIds, 1);
+  const [movie] = await pickRandom(language, excludeMovieIds, 1);
   if (!movie) return null;
-  const distractors = await pickRandom([movie.id], CHOICES_PER_ROUND - 1);
+  const distractors = await pickRandom(
+    language,
+    [movie.id],
+    CHOICES_PER_ROUND - 1,
+  );
   if (distractors.length < CHOICES_PER_ROUND - 1) return null;
   return { movie, distractors };
 }
