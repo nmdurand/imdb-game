@@ -8,7 +8,6 @@ import { HINT_COST, HINT_TYPES, type HintType } from "@/consts";
 
 export function Round() {
   const round = useGameStore((s) => s.round);
-  const status = useGameStore((s) => s.status);
   const error = useGameStore((s) => s.error);
 
   if (error) {
@@ -32,7 +31,7 @@ export function Round() {
       <Plot text={round.plotRedacted} />
       <Hints />
       <Choices choices={round.choices} correctMovieId={round.correctMovieId} />
-      {status === "answering" && <NextAction />}
+      <NextAction />
     </div>
   );
 }
@@ -176,20 +175,23 @@ function Choices({
 }
 
 function NextAction() {
+  const status = useGameStore((s) => s.status);
   const revealedMovie = useGameStore((s) => s.revealedMovie);
   const advance = useGameStore((s) => s.advance);
 
-  if (!revealedMovie) {
-    return (
-      <div className="flex items-center justify-center py-2">
-        <CircularProgress size={20} />
-      </div>
-    );
-  }
+  const isAnswering = status === "answering";
+  const loading = isAnswering && !revealedMovie;
 
   return (
-    <Button variant="contained" color="primary" onClick={advance}>
-      Next
+    <Button
+      variant="contained"
+      color="primary"
+      onClick={advance}
+      disabled={!isAnswering || loading}
+      className={isAnswering ? "" : "invisible"}
+      aria-hidden={!isAnswering}
+    >
+      {loading ? <CircularProgress size={20} color="inherit" /> : "Next"}
     </Button>
   );
 }
